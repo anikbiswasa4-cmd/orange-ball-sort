@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ball Sort - Guest Mode</title>
+    <style>
+        :root { --orange: #ff6a00; --bg: #0f0f0f; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; overflow: hidden; touch-action: manipulation; }
+        
+        .menu-box { text-align: center; padding: 20px; border: 1px solid #333; border-radius: 15px; background: #1a1a1a; }
+        .tube-container { display: flex; gap: 8px; padding: 20px; justify-content: center; flex-wrap: nowrap; }
+        
+        .tube { width: 42px; height: 150px; border: 3px solid #fff; border-top: none; border-radius: 0 0 20px 20px; display: flex; flex-direction: column-reverse; align-items: center; padding-bottom: 5px; cursor: pointer; transition: 0.2s; }
+        .tube.selected { border-color: var(--orange); transform: translateY(-15px); }
+        
+        .ball { width: 35px; height: 35px; border-radius: 50%; margin-bottom: 2px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .btn { padding: 12px 25px; margin: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 200px; }
+        .btn-orange { background: var(--orange); color: white; }
+        .btn-guest { background: #444; color: white; }
+        .btn:hover { opacity: 0.8; transform: scale(1.05); }
+
+        #game-screen { display: none; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="main-menu" class="menu-box">
+        <h1 style="color: var(--orange);">Ball Sort Puzzle</h1>
+        <p>Choose your play mode</p>
+        <button class="btn btn-orange" onclick="startSession()">Login with Orange</button> <br>
+        <button class="btn btn-guest" onclick="enableGuestMode()">Play as Guest</button>
+    </div>
+
+    <div id="game-screen">
+        <div id="timer" style="margin-bottom: 10px; color: var(--orange); font-size: 18px;">Mode: Guest</div>
+        <div class="tube-container" id="board"></div>
+        <button class="btn btn-guest" onclick="initGame()">Reset Level</button>
+        <button class="btn btn-orange" style="width: auto;" onclick="location.reload()">Back to Menu</button>
+    </div>
+
+    <script>
+        let tubes = [];
+        let selectedIdx = null;
+        let isGuest = false;
+
+        // গেস্ট মোড চালু করা
+        function enableGuestMode() {
+            isGuest = true;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('timer').innerText = "Mode: Guest Play";
+            initGame();
+        }
+
+        // অরেঞ্জ সেশন (লিঙ্ক থেকে টোকেন চেক করবে)
+        function startSession() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('pass_token');
+
+            if (!token) {
+                alert("No Orange token found! Please use Guest Mode for testing.");
+                return;
+            }
+            // সেশন ভ্যালিডেশন লজিক (আগের মতো)
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('timer').innerText = "Mode: Orange Live";
+            initGame();
+        }
+
+        function initGame() {
+            // ৪টি মিক্সড টিউব এবং ২টি খালি টিউব
+            tubes = [
+                ['#FF3B30', '#4CD964', '#007AFF', '#FFCC00'],
+                ['#FFCC00', '#FF3B30', '#4CD964', '#007AFF'],
+                ['#4CD964', '#007AFF', '#FF3B30', '#FFCC00'],
+                ['#007AFF', '#FFCC00', '#FF3B30', '#4CD964'],
+                [], []
+            ];
+            selectedIdx = null;
+            render();
+        }
+
+        function render() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            tubes.forEach((tube, index) => {
+                const div = document.createElement('div');
+                div.className = `tube ${selectedIdx === index ? 'selected' : ''}`;
+                
+                // মোবাইল টাচ ইভেন্ট
+                div.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleMove(index);
+                });
+
+                tube.forEach(color => {
+                    const ball = document.createElement('div');
+                    ball.className = 'ball';
+                    ball.style.backgroundColor = color;
+                    div.appendChild(ball);
+                });
+                board.appendChild(div);
+            });
+        }
+
+        function handleMove(idx) {
+            if (selectedIdx === null) {
+                if (tubes[idx].length > 0) selectedIdx = idx;
+            } else {
+                if (selectedIdx !== idx) {
+                    const ball = tubes[selectedIdx][tubes[selectedIdx].length - 1];
+                    const target = tubes[idx];
+                    if (target.length < 4 && (target.length === 0 || target[target.length - 1] === ball)) {
+                        target.push(tubes[selectedIdx].pop());
+                        selectedIdx = null;
+                        checkWin();
+                    } else {
+                        selectedIdx = idx; // নতুন টিউব সিলেক্ট হবে
+                    }
+                } else {
+                    selectedIdx = null;
+                }
+            }
+            render();
+        }
+
+        function checkWin() {
+            const win = tubes.every(t => t.length === 0 || (t.length === 4 && t.every(b => b === t[0])));
+            if (win) {
+                setTimeout(() => alert("Congratulations! You won!"), 300);
+            }
+        }
+    </script>
+</body>
+</html>
